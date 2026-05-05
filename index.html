@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IaaS Foundations — Compute, Networking, Storage, Regions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<style>
+  :root { --amber:#f5a623;--green:#4ecb8d;--purple:#a78bfa;--blue:#60a5fa;--red:#f87171;
+    --bg:#0a0a0f;--bg2:#10101a;--bg3:#181824;--border:#2a2a3a;--text:#e8e8f0;--muted:#8888a8; }
+  .reveal-viewport{background:var(--bg);} .reveal .slides section{background:transparent;}
+  .reveal{font-family:'DM Sans',sans-serif;color:var(--text);}
+  .reveal h1,.reveal h2,.reveal h3{font-family:'Playfair Display',serif;font-weight:700;}
+  .reveal h1{font-size:1.6em;color:var(--amber);line-height:1.1;}
+  .reveal h2{font-size:1.1em;color:var(--amber);margin-bottom:.2em;}
+  .reveal h3{font-size:.78em;color:var(--green);margin-bottom:.15em;}
+  .reveal p{font-size:.56em;line-height:1.45;color:var(--text);}
+  .reveal li{font-size:.54em;line-height:1.45;margin-bottom:.1em;}
+  .reveal code{font-family:'JetBrains Mono',monospace;font-size:.72em;}
+  .reveal pre{box-shadow:none;background:var(--bg3);border:1px solid var(--border);
+    border-radius:6px;padding:.3em .5em;margin:.25em 0;}
+  .reveal pre code{font-size:.52em;line-height:1.35;background:transparent;color:#cdd6f4;}
+  .slide-hdr{display:flex;align-items:center;gap:.4em;border-bottom:1px solid var(--border);
+    padding-bottom:.2em;margin-bottom:.3em;}
+  .slide-hdr .tag{font-family:'JetBrains Mono',monospace;font-size:.42em;font-weight:500;
+    color:var(--bg);background:var(--amber);padding:.1em .4em;border-radius:3px;letter-spacing:.04em;}
+  .slide-hdr h2{margin:0;font-size:.95em;}
+  .cols{display:grid;gap:.5em;} .cols-2{grid-template-columns:1fr 1fr;}
+  .cols-3{grid-template-columns:1fr 1fr 1fr;} .cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .cols-6040{grid-template-columns:6fr 4fr;} .cols-4060{grid-template-columns:4fr 6fr;}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:.35em .6em;}
+  .card.amber{border-left:3px solid var(--amber);} .card.green{border-left:3px solid var(--green);}
+  .card.purple{border-left:3px solid var(--purple);} .card.blue{border-left:3px solid var(--blue);}
+  .card.red{border-left:3px solid var(--red);}
+  .card h3{font-size:.64em;margin:0 0 .12em;} .card p{font-size:.52em;margin:0;color:#b8b8d0;}
+  .card ul{margin:0;padding-left:1em;} .card li{font-size:.52em;color:#b8b8d0;margin-bottom:.02em;}
+  .reveal table{width:100%;border-collapse:collapse;font-size:.5em;}
+  .reveal table th{background:var(--bg3);color:var(--amber);font-weight:600;
+    padding:.2em .4em;border:1px solid var(--border);text-align:left;}
+  .reveal table td{padding:.18em .4em;border:1px solid var(--border);color:#ccc;}
+  .reveal table tr:nth-child(even) td{background:#0e0e18;}
+  .a{color:var(--amber);font-weight:600;} .g{color:var(--green);font-weight:600;}
+  .p{color:var(--purple);font-weight:600;} .b{color:var(--blue);font-weight:600;}
+  .r{color:var(--red);font-weight:600;} .mono{font-family:'JetBrains Mono',monospace;}
+  svg.diagram{display:block;margin:0 auto;overflow:visible;}
+  .pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.44em;
+    padding:.08em .4em;border-radius:99px;border:1px solid;margin:0 .08em;}
+  .pill.amber{color:var(--amber);border-color:var(--amber);}
+  .pill.green{color:var(--green);border-color:var(--green);}
+  .pill.purple{color:var(--purple);border-color:var(--purple);}
+  .pill.blue{color:var(--blue);border-color:var(--blue);}
+  .reveal .slide-footer{display:none;}
+  .title-slide h1{font-size:1.8em;}
+  .title-slide .subtitle{font-size:.7em;color:var(--green);font-family:'DM Sans',sans-serif;
+    font-weight:300;letter-spacing:.04em;margin:.3em 0 .6em;}
+  .title-slide .meta{font-size:.48em;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .ss-row{display:flex;gap:.25em;align-items:center;margin:.1em 0;font-size:.55em;
+    font-family:'JetBrains Mono',monospace;flex-wrap:wrap;}
+  .ss-node{padding:.2em .55em;border-radius:5px;font-size:.9em;
+    background:var(--bg3);border:1px solid var(--border);color:var(--text);}
+  .ss-node.active{background:#1a2a1a;border-color:var(--green);color:var(--green);}
+  .ss-node.done{background:#1a1a2a;border-color:var(--purple);color:var(--purple);}
+  .ss-arrow{color:var(--amber);} .ss-label{font-size:.8em;color:var(--muted);margin-left:.3em;}
+  .reveal ul,.reveal ol{margin:.15em 0 .15em 1em;}
+  .reveal .slides>section{display:flex!important;flex-direction:column!important;
+    overflow-y:auto!important;align-items:stretch!important;justify-content:flex-start!important;}
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+
+<!-- 01 — TITLE -->
+<section class="title-slide" data-background-color="#0a0a0f">
+  <div style="text-align:left; max-width:820px; margin:0 auto; padding: 1em 0;">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:.5em; color:var(--muted); margin-bottom:.4em; letter-spacing:.1em;">
+      CLOUD SERVICE MODELS &middot; PART 2 OF 6
+    </div>
+    <h1>IaaS<br>Foundations</h1>
+    <div class="subtitle">Compute · Networking · Storage · Regions · Identity — the floor of cloud</div>
+    <div style="width:60px; height:3px; background:var(--amber); margin-bottom:1.4em;"></div>
+    <div style="display:flex; gap:.4em; flex-wrap:wrap; margin-bottom:1em;">
+      <span class="pill amber">VMs</span>
+      <span class="pill green">VPC</span>
+      <span class="pill purple">Block / Object / File</span>
+      <span class="pill blue">Region · AZ</span>
+      <span class="pill amber">IAM</span>
+    </div>
+    <div class="ss-row">
+      <span class="ss-node active">🖥 Compute</span>
+      <span class="ss-arrow">+</span>
+      <span class="ss-node active">🌐 Network</span>
+      <span class="ss-arrow">+</span>
+      <span class="ss-node active">💾 Storage</span>
+      <span class="ss-arrow">+</span>
+      <span class="ss-node done">🔐 Identity</span>
+      <span class="ss-arrow">→</span>
+      <span class="ss-node done">🧱 a system</span>
+    </div>
+    <p style="max-width:640px; color:#a0a0c0; font-size:.56em; line-height:1.5; margin-top:1em;">
+      What you actually rent at the IaaS layer, the operational tax that comes with it, and when IaaS still wins versus climbing to PaaS or CaaS.
+    </p>
+    <div class="meta" style="margin-top:1.4em;">
+      Compute &nbsp;·&nbsp; Network &nbsp;·&nbsp; Storage &nbsp;·&nbsp; Identity &nbsp;·&nbsp; Cost
+    </div>
+  </div>
+</section>
+
+
+<!-- 02 — TOPICS -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">01</span><h2>Topics</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Compute</h3>
+        <ul>
+          <li>The VM as a primitive — instance families &amp; shapes</li>
+          <li>Spot / preemptible — the economics of "you can lose it"</li>
+          <li>Bare metal &amp; dedicated hosts — when virtualisation hurts</li>
+          <li>Burstable, GPU, ARM (Graviton, Axion) instances</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Networking</h3>
+        <ul>
+          <li>The VPC — virtual data centre</li>
+          <li>Subnets, routes, NAT, internet gateways</li>
+          <li>Security groups vs NACLs</li>
+          <li>PrivateLink, peering, Transit Gateway, hybrid VPN/Direct Connect</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Storage</h3>
+        <ul>
+          <li>Block (EBS / PD / Managed Disks) — the disk metaphor</li>
+          <li>Object (S3 / GCS / Blob) — the bucket metaphor</li>
+          <li>File (EFS / Filestore / Azure Files) — when you really want NFS</li>
+          <li>Storage class lifecycle &amp; tiering</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Operability</h3>
+        <ul>
+          <li>Region &amp; AZ design — what fails, when</li>
+          <li>IAM, STS, instance profiles</li>
+          <li>Provisioning — Terraform / Pulumi / CDK</li>
+          <li>Cost watch-points &amp; anti-patterns</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 03 — VM PRIMITIVE -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">02</span><h2>The VM — IaaS's One Primitive</h2></div>
+  <p>An IaaS VM is a virtualised x86_64 / ARM64 server with: <span class="a">a chosen shape</span> (vCPU + RAM + ephemeral disk), <span class="a">a network interface</span> in a VPC subnet, <span class="a">a boot disk</span>, <span class="a">an IAM identity</span>, and <span class="a">a region + AZ</span>. Everything else in IaaS exists to network, store, or govern this primitive.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">The hypervisor underneath</h3>
+        <ul>
+          <li><span class="g">AWS Nitro</span> — KVM-based, custom ASICs offload network &amp; storage; bare-metal-fast for guests</li>
+          <li><span class="g">GCP</span> — KVM with custom Andromeda networking</li>
+          <li><span class="g">Azure</span> — Hyper-V; Boost &amp; Azure Boost ASIC offload (2023+)</li>
+          <li><span class="g">Firecracker</span> — Amazon's micro-VM; powers Lambda &amp; Fargate; Fly.io adopted it</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Instance families (AWS naming, others mirror)</h3>
+        <ul>
+          <li><span class="a">m</span> — general purpose (m7i, m7g)</li>
+          <li><span class="a">c</span> — compute-optimised</li>
+          <li><span class="a">r / x</span> — memory-optimised (r-class, x-class for in-memory DBs)</li>
+          <li><span class="a">i / d</span> — storage-optimised, local NVMe</li>
+          <li><span class="a">g / p / inf / trn</span> — GPU / accelerator</li>
+          <li><span class="a">t</span> — burstable / cheap dev</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">ARM is no longer optional</h3>
+        <ul>
+          <li><span class="a">AWS Graviton</span> (Neoverse N1 → V2): ~20% cheaper, ~40% better perf-per-watt vs x86 equivalents</li>
+          <li><span class="a">GCP Axion</span> (Neoverse V2): C4A, T2A — generally 30% better price-perf</li>
+          <li><span class="a">Azure Cobalt 100</span> — Microsoft's first ARM silicon (2024 GA)</li>
+          <li>Build pipelines: <code>linux/arm64</code> images now table-stakes; Docker buildx / GitHub Actions cover it cleanly</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Reading the shape</h3>
+<pre><code># AWS
+m7i.2xlarge  → m7 family, intel, 2× the base size (8 vCPU, 32 GB)
+c7g.large    → c7 family, graviton (g), large (2 vCPU, 4 GB)
+
+# GCP
+n2-standard-4 → n2 family, standard mem ratio, 4 vCPU
+c4a-highcpu-8 → c4 family, Axion (a), 8 vCPU, 4 GB
+
+# Azure
+Standard_D4s_v5 → 4 vCPU, premium disk (s), v5 generation</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 04 — SPOT -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">03</span><h2>Spot &amp; Preemptible — Pay 60–90% Less</h2></div>
+  <p>Spot instances are surplus capacity, sold at a steep discount but with the catch: the cloud can <span class="r">reclaim them on minutes' notice</span>. Used right, they slash costs; used wrong, they take down production.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Three flavours</h3>
+        <table>
+          <thead><tr><th>Cloud</th><th>Name</th><th>Eviction notice</th><th>Discount</th></tr></thead>
+          <tbody>
+            <tr><td>AWS</td><td>Spot</td><td>2 min</td><td>50–90%</td></tr>
+            <tr><td>GCP</td><td>Spot VM (was Preemptible)</td><td>30 s</td><td>~70%</td></tr>
+            <tr><td>Azure</td><td>Spot</td><td>30 s</td><td>~80%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">When spot is right</h3>
+        <ul>
+          <li>Stateless web tier behind a load balancer; nodes come and go</li>
+          <li>Batch jobs that checkpoint (ML training, video transcoding, ETL)</li>
+          <li>CI runners, dev environments, ephemeral test fleets</li>
+          <li>Kubernetes node pools tagged "tolerates eviction"</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card red">
+        <h3 class="r">When spot will hurt you</h3>
+        <ul>
+          <li>Stateful primary databases — eviction = downtime + recovery</li>
+          <li>Long single-node training (no checkpointing) — burned hours</li>
+          <li>Whole fleet on one instance shape in one AZ — capacity drains together</li>
+        </ul>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">Patterns that work</h3>
+        <ul>
+          <li><span class="a">Diversified pools</span> — multiple shapes / AZs; orchestrator picks whichever has capacity (AWS Spot Fleet, EKS Karpenter)</li>
+          <li><span class="a">Mixed on-demand / spot</span> — small on-demand baseline + spot burst</li>
+          <li><span class="a">Eviction handlers</span> — drain endpoint, persist state in 30s, rejoin elsewhere</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Bare metal &amp; dedicated hosts</h3>
+        <p>Other end of the spectrum: <span class="a">EC2 i4i.metal</span>, <span class="a">GCP sole-tenant nodes</span>, <span class="a">Azure dedicated hosts</span>. No hypervisor overhead, BYOL licensing eligibility, full physical isolation. Used for HPC, BYO virtualisation, and licensing-bound workloads (Oracle, Windows Server core-licensed).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 05 — VPC ANATOMY -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">04</span><h2>The VPC — Your Virtual Data Centre</h2></div>
+  <p>A VPC (Virtual Private Cloud) is a software-defined network you own inside the provider's substrate. CIDR range, subnets, routes, security — yours; the underlying physical fabric — theirs.</p>
+
+  <svg class="diagram" viewBox="0 0 980 380" width="940" height="380">
+    <!-- VPC outer -->
+    <rect x="20" y="40" width="940" height="320" rx="8" fill="none" stroke="#f5a623" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="40" y="35" fill="#f5a623" font-family="Playfair Display,serif" font-size="14" font-weight="700">VPC  10.0.0.0/16</text>
+
+    <!-- AZ-a -->
+    <rect x="40" y="70" width="440" height="270" rx="6" fill="none" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="3,3"/>
+    <text x="60" y="92" fill="#a78bfa" font-family="Playfair Display,serif" font-size="12" font-weight="700">AZ-a</text>
+
+    <!-- public subnet -->
+    <rect x="60" y="105" width="180" height="100" rx="4" fill="#1a2a1a" stroke="#4ecb8d"/>
+    <text x="150" y="120" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">public 10.0.1.0/24</text>
+    <rect x="80" y="135" width="60" height="22" rx="3" fill="#10101a" stroke="#4ecb8d"/>
+    <text x="110" y="150" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">ALB</text>
+    <rect x="160" y="135" width="60" height="22" rx="3" fill="#10101a" stroke="#4ecb8d"/>
+    <text x="190" y="150" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">NAT GW</text>
+
+    <!-- private subnet -->
+    <rect x="260" y="105" width="200" height="100" rx="4" fill="#1a1a2a" stroke="#60a5fa"/>
+    <text x="360" y="120" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">private 10.0.10.0/24</text>
+    <rect x="280" y="135" width="80" height="22" rx="3" fill="#10101a" stroke="#60a5fa"/>
+    <text x="320" y="150" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">app VM</text>
+    <rect x="370" y="135" width="80" height="22" rx="3" fill="#10101a" stroke="#60a5fa"/>
+    <text x="410" y="150" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">app VM</text>
+
+    <!-- data subnet -->
+    <rect x="60" y="220" width="400" height="100" rx="4" fill="#2a1a1a" stroke="#f87171"/>
+    <text x="260" y="235" fill="#f87171" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">data 10.0.20.0/24 (private)</text>
+    <rect x="100" y="252" width="100" height="22" rx="3" fill="#10101a" stroke="#f87171"/>
+    <text x="150" y="267" fill="#f87171" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">RDS primary</text>
+    <rect x="240" y="252" width="100" height="22" rx="3" fill="#10101a" stroke="#f87171"/>
+    <text x="290" y="267" fill="#f87171" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">ElastiCache</text>
+
+    <!-- AZ-b -->
+    <rect x="500" y="70" width="440" height="270" rx="6" fill="none" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="3,3"/>
+    <text x="520" y="92" fill="#a78bfa" font-family="Playfair Display,serif" font-size="12" font-weight="700">AZ-b</text>
+
+    <rect x="520" y="105" width="180" height="100" rx="4" fill="#1a2a1a" stroke="#4ecb8d"/>
+    <text x="610" y="120" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">public 10.0.2.0/24</text>
+    <rect x="540" y="135" width="60" height="22" rx="3" fill="#10101a" stroke="#4ecb8d"/>
+    <text x="570" y="150" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">ALB</text>
+    <rect x="620" y="135" width="60" height="22" rx="3" fill="#10101a" stroke="#4ecb8d"/>
+    <text x="650" y="150" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">NAT GW</text>
+
+    <rect x="720" y="105" width="200" height="100" rx="4" fill="#1a1a2a" stroke="#60a5fa"/>
+    <text x="820" y="120" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">private 10.0.11.0/24</text>
+    <rect x="740" y="135" width="80" height="22" rx="3" fill="#10101a" stroke="#60a5fa"/>
+    <text x="780" y="150" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">app VM</text>
+    <rect x="830" y="135" width="80" height="22" rx="3" fill="#10101a" stroke="#60a5fa"/>
+    <text x="870" y="150" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">app VM</text>
+
+    <rect x="520" y="220" width="400" height="100" rx="4" fill="#2a1a1a" stroke="#f87171"/>
+    <text x="720" y="235" fill="#f87171" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">data 10.0.21.0/24 (private)</text>
+    <rect x="560" y="252" width="100" height="22" rx="3" fill="#10101a" stroke="#f87171"/>
+    <text x="610" y="267" fill="#f87171" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">RDS replica</text>
+
+    <!-- IGW -->
+    <rect x="430" y="20" width="120" height="22" rx="4" fill="#10101a" stroke="#f5a623"/>
+    <text x="490" y="35" fill="#f5a623" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">Internet Gateway</text>
+  </svg>
+
+  <div class="cols cols-2" style="margin-top:0.2em;">
+    <div class="card amber">
+      <h3 class="a">Three-tier subnet pattern</h3>
+      <p><span class="g">Public</span> — load balancers + NAT only. <span class="b">Private</span> — app tier; outbound via NAT, inbound only from ALB. <span class="r">Data</span> — DBs + caches; no internet at all, both ways.</p>
+    </div>
+    <div class="card green">
+      <h3 class="g">Two AZs minimum</h3>
+      <p>Every tier replicated across at least two AZs. An AZ failure (an entire data centre going dark) should leave you running, not down. <em>Cross-AZ traffic is billed</em> — but cheaper than downtime.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- 06 — ROUTES, NAT, IGW -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">05</span><h2>Routing — IGW · NAT · Endpoints</h2></div>
+  <p>Routes inside a VPC are explicit: each subnet has a route table, and every destination CIDR has a target. There is no "default" — if you didn't write a route to <code>0.0.0.0/0</code>, the subnet has no internet.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Three ways out</h3>
+        <ul>
+          <li><span class="g">Internet Gateway (IGW)</span> — bidirectional. Subnet that routes <code>0.0.0.0/0 → IGW</code> + has a public IP = "public subnet".</li>
+          <li><span class="g">NAT Gateway</span> — outbound-only. Private instances reach the internet through it; the internet can't reach them.</li>
+          <li><span class="g">VPC Endpoints / PrivateLink</span> — talk to AWS services (S3, DynamoDB, Bedrock, …) over the AWS backbone, without leaving the VPC.</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">NAT gateway — the fee meter</h3>
+        <ul>
+          <li>~$0.045/hour per NAT GW <em>plus</em> $0.045/GB processed (us-east-1)</li>
+          <li>One per AZ for HA → ~$32/month idle &times; AZs</li>
+          <li>Heavy data fetch (Docker pulls, package installs) routes through NAT — surprise bills</li>
+          <li>Mitigation: VPC endpoints for ECR, S3; pull-through caches; <code>amazon-vpc-cni</code> for Kubernetes pods to use ENIs directly</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Cross-VPC connectivity</h3>
+        <ul>
+          <li><span class="a">VPC Peering</span> — point-to-point, non-transitive, 1:1 between VPCs</li>
+          <li><span class="a">Transit Gateway</span> — hub-and-spoke router; many VPCs, one route table</li>
+          <li><span class="a">PrivateLink</span> — expose <em>one service</em> from your VPC to others, without exposing the VPC</li>
+          <li><span class="a">Cloud WAN</span> (AWS) / <span class="a">NCC</span> (GCP) — global SD-WAN-as-a-Service</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">On-prem ↔ cloud</h3>
+        <ul>
+          <li><span class="a">Site-to-site VPN</span> — IPsec over the public internet; cheapest, ~1 Gbps each</li>
+          <li><span class="a">Direct Connect / Cloud Interconnect / ExpressRoute</span> — private fibre into the cloud's edge; up to 100 Gbps; the only sensible choice for hybrid at scale</li>
+          <li><span class="a">SD-WAN partners</span> — Megaport, Equinix Fabric — multi-cloud across one fibre</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 07 — SG vs NACL -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">06</span><h2>Security Groups vs NACLs</h2></div>
+  <p>Two stateless concepts and one stateful one. Confuse them and you ship vulnerabilities or break production at 3am.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Security Groups (the daily-driver)</h3>
+        <ul>
+          <li>Attached to <span class="g">network interfaces</span> (instances, ENIs, RDS, Lambda VPC ENIs)</li>
+          <li><span class="g">Stateful</span> — return traffic for an established flow is automatically allowed</li>
+          <li>Allow rules only — there is no deny</li>
+          <li>Default rule: deny all inbound, allow all outbound</li>
+          <li>Source can be a <em>CIDR</em> or another <em>SG</em> — chaining ("web SG can talk to db SG") is the right pattern</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">Network ACLs (the perimeter)</h3>
+        <ul>
+          <li>Attached to <span class="a">subnets</span></li>
+          <li><span class="r">Stateless</span> — must explicitly allow return traffic, both directions</li>
+          <li>Allow <em>and</em> deny rules; numbered, evaluated in order</li>
+          <li>Default: allow all (deliberately permissive)</li>
+          <li>Used as a coarse "blast radius" backstop — rare in day-to-day, vital for compliance perimeters</li>
+        </ul>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">Defence in depth</h3>
+        <ul>
+          <li>NACL: "no traffic from outside the corporate IP space"</li>
+          <li>SG: "ALB ↔ app, app ↔ db, nothing else"</li>
+          <li>Host firewall: distro defaults (often nothing — that's fine when SGs are tight)</li>
+          <li>Application: TLS, mTLS, app-layer auth</li>
+        </ul>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">The classic SG anti-pattern</h3>
+        <p><code>0.0.0.0/0</code> on port 22 "for now". That gets scanned and brute-forced inside an hour. Use SSM Session Manager / IAP tunnels — see deck 05.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 08 — STORAGE TRIO -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">07</span><h2>Storage — Block / Object / File</h2></div>
+  <p>Cloud storage is three almost-unrelated services trading off durability, latency, throughput, and price. Use the wrong one and you pay 100× — in either direction.</p>
+
+  <table style="font-size:.46em; margin-top:.3em;">
+    <thead><tr><th>Type</th><th>AWS</th><th>GCP</th><th>Azure</th><th>Latency</th><th>Throughput</th><th>Pricing shape</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="a">Block</span></td>
+        <td>EBS (gp3, io2, st1)</td>
+        <td>Persistent Disk (pd-ssd, pd-balanced)</td>
+        <td>Managed Disks (Premium/Ultra)</td>
+        <td>&lt; 1 ms</td>
+        <td>up to 16 GB/s (io2 BX)</td>
+        <td>$/GB-month + IOPS + throughput</td>
+        <td>VM root, DB volumes</td>
+      </tr>
+      <tr>
+        <td><span class="a">Object</span></td>
+        <td>S3 (Standard / IA / Glacier)</td>
+        <td>GCS (Standard / Nearline / Archive)</td>
+        <td>Blob (Hot / Cool / Archive)</td>
+        <td>10–100 ms TTFB</td>
+        <td>massive parallel</td>
+        <td>$/GB-month + GET/PUT + egress</td>
+        <td>backups, media, data lakes</td>
+      </tr>
+      <tr>
+        <td><span class="a">File</span></td>
+        <td>EFS (NFSv4) / FSx (Lustre, ONTAP, OpenZFS)</td>
+        <td>Filestore (NFS), Cloud Storage FUSE</td>
+        <td>Azure Files (SMB / NFS)</td>
+        <td>1–5 ms</td>
+        <td>up to 10s of GB/s (FSx Lustre)</td>
+        <td>$/GB-month + IOPS</td>
+        <td>shared home dirs, lift-and-shift NFS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cols cols-3" style="margin-top:.3em;">
+    <div class="card amber">
+      <h3 class="a">Block — disk-shaped</h3>
+      <p>One VM mounts one volume. Looks like <code>/dev/nvme1n1</code>. Snapshot to object storage, never accessible to a second VM (except in clustered FS setups).</p>
+    </div>
+    <div class="card green">
+      <h3 class="g">Object — bucket-shaped</h3>
+      <p>HTTP-addressed key/value over flat namespace. 11-nines durability. The right answer for >90% of "files" you'd otherwise put in a filesystem.</p>
+    </div>
+    <div class="card purple">
+      <h3 class="p">File — NFS-shaped</h3>
+      <p>POSIX shared filesystem. Most lift-and-shift uses; almost always more expensive than designing for object storage.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- 09 — STORAGE LIFECYCLE -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">08</span><h2>Storage Class Lifecycle — Tiering Down</h2></div>
+  <p>Object storage has a price/access trade-off baked in: hot tiers cost more per GB but cheap to read; cold tiers are nearly free at rest but expensive (and slow) to retrieve. Lifecycle rules <span class="a">automate the descent</span>.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">S3 storage classes (per GB-month, us-east-1, ~)</h3>
+        <table>
+          <thead><tr><th>Class</th><th>Storage</th><th>GET</th><th>Min duration</th></tr></thead>
+          <tbody>
+            <tr><td>Standard</td><td>$0.023</td><td>$0.0004 / 1k</td><td>—</td></tr>
+            <tr><td>Standard-IA</td><td>$0.0125</td><td>$0.001 / 1k</td><td>30 d</td></tr>
+            <tr><td>Intelligent-Tiering</td><td>auto</td><td>auto</td><td>—</td></tr>
+            <tr><td>Glacier Instant Retrieval</td><td>$0.004</td><td>$0.01 / 1k</td><td>90 d</td></tr>
+            <tr><td>Glacier Flexible</td><td>$0.0036</td><td>+ retrieval</td><td>90 d</td></tr>
+            <tr><td>Glacier Deep Archive</td><td>$0.00099</td><td>+ retrieval</td><td>180 d</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">A typical rule</h3>
+<pre><code># Standard → IA after 30d → Glacier after 90d → expire after 7 years
+&lt;LifecycleConfiguration&gt;
+  &lt;Rule&gt;
+    &lt;Filter&gt;&lt;Prefix&gt;logs/&lt;/Prefix&gt;&lt;/Filter&gt;
+    &lt;Status&gt;Enabled&lt;/Status&gt;
+    &lt;Transition&gt;
+      &lt;Days&gt;30&lt;/Days&gt;
+      &lt;StorageClass&gt;STANDARD_IA&lt;/StorageClass&gt;
+    &lt;/Transition&gt;
+    &lt;Transition&gt;
+      &lt;Days&gt;90&lt;/Days&gt;
+      &lt;StorageClass&gt;GLACIER&lt;/StorageClass&gt;
+    &lt;/Transition&gt;
+    &lt;Expiration&gt;
+      &lt;Days&gt;2555&lt;/Days&gt;
+    &lt;/Expiration&gt;
+  &lt;/Rule&gt;
+&lt;/LifecycleConfiguration&gt;</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Cloudflare R2 — the disruptor</h3>
+        <ul>
+          <li>S3-compatible API, $0.015/GB-month, <span class="a">zero egress fees</span></li>
+          <li>No regional choice — Cloudflare picks the closest of its 300+ locations</li>
+          <li>"Data egress is the price of cloud lock-in" was their explicit pitch</li>
+          <li>Forced AWS to introduce free egress on full account exits (early 2024)</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Cost gotchas</h3>
+        <ul>
+          <li><span class="r">Small-object tax</span> — moving 1 KB to Glacier costs more in retrieval than the GB it sits in</li>
+          <li><span class="r">Replication doubles cost</span> — CRR / SRR / Object Replication; useful for compliance, not cost</li>
+          <li><span class="r">Versioning + delete markers</span> — "deleted" objects keep accruing storage cost forever unless lifecycled</li>
+          <li><span class="r">Multi-part upload incompletes</span> — abandoned uploads stick around indefinitely; add a cleanup rule</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 10 — REGIONS / AZS -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">09</span><h2>Regions &amp; Availability Zones</h2></div>
+  <p>A <span class="a">region</span> is a geographic cluster of <span class="a">availability zones</span> (AZs); each AZ is one or more physically separate data centres on independent power and network. Designing for failure means designing across AZs first, regions second.</p>
+
+  <svg class="diagram" viewBox="0 0 1000 240" width="940" height="240">
+    <!-- region box -->
+    <rect x="40" y="40" width="920" height="160" rx="8" fill="none" stroke="#f5a623" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="60" y="32" fill="#f5a623" font-family="Playfair Display,serif" font-size="14" font-weight="700">Region: eu-west-2 (London)</text>
+
+    <!-- AZ a -->
+    <rect x="80" y="70" width="240" height="110" rx="6" fill="#1a1a2a" stroke="#a78bfa"/>
+    <text x="200" y="90" fill="#a78bfa" font-family="Playfair Display,serif" font-size="12" font-weight="700" text-anchor="middle">AZ-a (eu-west-2a)</text>
+    <text x="200" y="115" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">DC1 + DC2</text>
+    <text x="200" y="135" fill="#888" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">~10 km from peers</text>
+    <text x="200" y="155" fill="#888" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">independent power &amp; cooling</text>
+
+    <!-- AZ b -->
+    <rect x="380" y="70" width="240" height="110" rx="6" fill="#1a1a2a" stroke="#a78bfa"/>
+    <text x="500" y="90" fill="#a78bfa" font-family="Playfair Display,serif" font-size="12" font-weight="700" text-anchor="middle">AZ-b</text>
+    <text x="500" y="115" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">DC3 + DC4</text>
+    <text x="500" y="155" fill="#888" font-family="JetBrains Mono,monospace" font-size="9" text-anchor="middle">~&lt; 2ms RTT to peers</text>
+
+    <!-- AZ c -->
+    <rect x="680" y="70" width="240" height="110" rx="6" fill="#1a1a2a" stroke="#a78bfa"/>
+    <text x="800" y="90" fill="#a78bfa" font-family="Playfair Display,serif" font-size="12" font-weight="700" text-anchor="middle">AZ-c</text>
+    <text x="800" y="115" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">DC5</text>
+
+    <!-- inter-AZ link -->
+    <line x1="320" y1="125" x2="380" y2="125" stroke="#4ecb8d" stroke-width="1.4" stroke-dasharray="4,2"/>
+    <line x1="620" y1="125" x2="680" y2="125" stroke="#4ecb8d" stroke-width="1.4" stroke-dasharray="4,2"/>
+
+    <text x="500" y="220" text-anchor="middle" fill="#888" font-family="DM Sans,sans-serif" font-size="11">"AZ" is a logical name; AWS uses zone IDs (use1-az1) so two accounts' "us-east-1a" can map to different physical zones.</text>
+  </svg>
+
+  <div class="cols cols-2" style="margin-top:0.2em;">
+    <div class="card amber">
+      <h3 class="a">Choose your region for</h3>
+      <ul>
+        <li><span class="g">Latency to users</span> — pick the nearest one with the services you need</li>
+        <li><span class="g">Compliance / residency</span> — UK, eu-central-1, gov-cloud</li>
+        <li><span class="g">Service availability</span> — not every region has every service or SKU</li>
+        <li><span class="g">Cost</span> — us-east-1 is the cheapest baseline; eu-west-1 ~5–10% more; ap-east-1 ~30% more</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3 class="g">Multi-region patterns</h3>
+      <ul>
+        <li><span class="a">Active-passive</span> — primary region serves; DR site sits warm. RPO minutes, RTO hours.</li>
+        <li><span class="a">Active-active read</span> — global reads close to user, writes go to primary (Aurora Global, Spanner)</li>
+        <li><span class="a">Truly global</span> — Spanner, DynamoDB Global Tables, Cosmos DB; conflict-free or last-writer-wins</li>
+        <li><span class="a">Service-by-service</span> — ML batch in cheap region, latency-sensitive front-end at the edge</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- 11 — IAM PRIMITIVES -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">10</span><h2>Cloud Identity Primitives</h2></div>
+  <p>Every IaaS resource has an identity, every API call is authenticated and authorised, every audit log records who did what. <em>This</em> is the cloud's most powerful feature — and the hardest to use right. (Deep dive in deck 05.)</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Things that have identity</h3>
+        <ul>
+          <li><span class="g">Humans</span> — federated via SSO (rarely as IAM users)</li>
+          <li><span class="g">Workloads</span> — instance roles, service accounts, K8s service accounts</li>
+          <li><span class="g">CI/CD</span> — OIDC-federated GitHub Actions runners, GitLab runners, Buildkite agents</li>
+          <li><span class="g">External services</span> — cross-account roles, AssumeRole-with-WebIdentity</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">The four building blocks (AWS naming)</h3>
+        <ul>
+          <li><span class="a">Identity</span> — user, role, service account</li>
+          <li><span class="a">Policy</span> — JSON document of allow/deny statements</li>
+          <li><span class="a">Resource</span> — what the policy applies to</li>
+          <li><span class="a">STS</span> — short-lived credentials, role assumption, AssumeRole</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">An IAM policy</h3>
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "s3:GetObject",
+      "s3:PutObject"
+    ],
+    "Resource": "arn:aws:s3:::data-prod/uploads/*",
+    "Condition": {
+      "StringEquals": {
+        "aws:PrincipalTag/team": "ingest"
+      },
+      "Bool": { "aws:SecureTransport": "true" }
+    }
+  }]
+}</code></pre>
+        <p style="margin-top:.3em;">Allow only POST/GET, only on one prefix, only over TLS, only for a tagged principal. Conditions are where the real expressiveness lives.</p>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">No long-lived keys, ever</h3>
+        <p>Workload Identity (GCP) / IRSA (EKS) / Pod Identity (EKS, 2023) / Managed Identity (Azure) / OIDC federation (GitHub Actions, GitLab) all give you short-lived STS credentials, no static keys to leak.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 12 — OBSERVABILITY -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">11</span><h2>Observability Primitives</h2></div>
+  <p>You don't have a server room to walk into; the only window onto your fleet is what the platform exposes plus what you instrument. Plan observability first, not last.</p>
+
+  <div class="cols cols-3" style="margin-top:0.4em;">
+    <div class="card amber">
+      <h3 class="a">Metrics</h3>
+      <ul>
+        <li><span class="g">CloudWatch / Cloud Monitoring / Azure Monitor</span> — built-in, basic but expensive at scale</li>
+        <li><span class="g">Prometheus / Mimir / Cortex</span> — OSS standard for high-cardinality metrics</li>
+        <li><span class="g">Datadog / New Relic / Grafana Cloud</span> — managed, pricey but turn-key</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3 class="g">Logs</h3>
+      <ul>
+        <li><span class="a">CloudWatch Logs / Cloud Logging / Log Analytics</span></li>
+        <li><span class="a">Loki / OpenSearch</span> — OSS aggregators</li>
+        <li><span class="a">Datadog Logs / Splunk</span> — eats your budget if you ship every line; sample &amp; index selectively</li>
+      </ul>
+    </div>
+    <div class="card purple">
+      <h3 class="p">Traces</h3>
+      <ul>
+        <li><span class="a">OpenTelemetry</span> — the cross-vendor standard; instrument once</li>
+        <li><span class="a">X-Ray / Cloud Trace / App Insights</span> — provider-native, often weaker than OTel-based tools</li>
+        <li><span class="a">Tempo / Jaeger / Zipkin</span> — OSS</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div class="card blue">
+      <h3 class="b">The four golden signals</h3>
+      <p><span class="a">Latency</span> · <span class="a">traffic</span> · <span class="a">errors</span> · <span class="a">saturation</span>. Per-service. Per-tenant for SaaS (deck 04). On the same dashboard as the cloud's <span class="g">platform metrics</span> (CPU credits, NAT GW throughput, NAT errors, ALB 5xx) so you can correlate.</p>
+    </div>
+    <div class="card red">
+      <h3 class="r">The cloud-bill-as-observability anti-pattern</h3>
+      <p>You'll hear "we know there's a problem because the bill spiked". That's <em>too late</em>. Set rate-of-change alerts on your bill (Cost Anomaly Detection, GCP Budget alerts) <em>and</em> normal SRE alerts on golden signals.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- 13 — IaC -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">12</span><h2>Provisioning — Infrastructure as Code</h2></div>
+  <p>Click-ops your way to one VPC and you've spent an afternoon. Click-ops your way to fifty across three accounts and you've made a career-limiting error. IaC is non-negotiable past the toy stage.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">The four serious tools</h3>
+        <ul>
+          <li><span class="g">Terraform / OpenTofu</span> — declarative HCL, multi-cloud, the de-facto standard. OpenTofu is the post-license-change OSS fork.</li>
+          <li><span class="g">Pulumi</span> — same model, real programming languages (TS, Python, Go, .NET)</li>
+          <li><span class="g">AWS CDK / CDKTF</span> — TypeScript / Python that compiles to CloudFormation or Terraform</li>
+          <li><span class="g">CloudFormation / ARM / Bicep / Deployment Manager</span> — vendor-native</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">A small Terraform module</h3>
+<pre><code>resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  tags = { Name = "prod" }
+}
+
+resource "aws_subnet" "private" {
+  for_each          = var.azs
+  vpc_id            = aws_vpc.main.id
+  availability_zone = each.value
+  cidr_block        = cidrsubnet("10.0.0.0/16", 8, 10 + index(keys(var.azs), each.key))
+  tags = { Tier = "private", Name = "prod-${each.key}" }
+}</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Ops practices that matter</h3>
+        <ul>
+          <li><span class="a">State remote &amp; locked</span> — S3 + DynamoDB, GCS, Azure Storage; lock prevents two engineers stomping each other</li>
+          <li><span class="a">Plan in CI, apply behind PR review</span> — Atlantis, Terraform Cloud, Spacelift, Env0</li>
+          <li><span class="a">No drift</span> — alert when reality &ne; state. Detect with <code>terraform plan -detailed-exitcode</code></li>
+          <li><span class="a">Modules</span> — one VPC module, one EKS module — not 12 copies</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">GitOps for IaC</h3>
+        <p>The path forward: PR opens a plan; merge to main triggers an apply via a CI runner with OIDC-federated cloud creds. No long-lived keys on developer laptops, no manual <code>terraform apply</code> in production. <a href="https://github.com/BrendanJamesLynskey/Introduction_to_CI_CD">CI/CD deck</a> covers the build side.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">Don't import the world</h3>
+        <p>If something was clicked first, write the resource block, then <code>terraform import</code>. Don't try to model existing chaos perfectly — most "drift" is unmanaged config you should probably leave outside IaC anyway.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 14 — IAAS COST -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">13</span><h2>What Costs Money on IaaS</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Compute</h3>
+        <ul>
+          <li>VM hours — biggest line on most bills</li>
+          <li>Reserved / Savings Plans / CUDs — 30–72% off for commitment</li>
+          <li>Spot — 50–90% off, eviction risk</li>
+          <li>Idle — running VMs at 02:00 with no users</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Storage</h3>
+        <ul>
+          <li>Block — provisioned size + IOPS + throughput, even if 90% empty</li>
+          <li>Object — storage + GETs/PUTs + retrieval; small-object tax</li>
+          <li>Snapshots / images — accumulate without lifecycle</li>
+          <li>Versioned objects — silent duplication</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Network</h3>
+        <ul>
+          <li><span class="r">Egress</span> — bytes leaving the cloud (~$0.05–0.12/GB)</li>
+          <li><span class="r">Cross-AZ</span> — ~$0.01–0.02/GB <em>each way</em></li>
+          <li><span class="r">NAT Gateway</span> — $0.045/hr + $0.045/GB processed</li>
+          <li><span class="r">Public IPv4</span> — chargeable since Feb 2024 (~$3.65/month each)</li>
+          <li><span class="r">Load balancers</span> — fixed hourly + LCU/processed-bytes</li>
+        </ul>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">Surprise generators</h3>
+        <ul>
+          <li>S3 versioning + no lifecycle = silent doubling each year</li>
+          <li>RDS Multi-AZ for "dev" = ~2× the cost forever</li>
+          <li>Forgotten test EKS clusters at $73/month each, ten of them</li>
+          <li>NAT GW pulling images on every Lambda cold start</li>
+          <li>CloudWatch Logs at $0.50/GB ingested for DEBUG-level chatty services</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">FinOps essentials</h3>
+        <p>Tag everything (cost-center, env, service); split bills with <a href="https://github.com/opencost/opencost">OpenCost</a>; review weekly with engineers, not finance.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 15 — WHEN IaaS WINS / LOSES -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">14</span><h2>When IaaS Still Wins (and When to Climb)</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card green">
+        <h3 class="g">IaaS still wins for</h3>
+        <ul>
+          <li><span class="a">Specialised kernels / drivers</span> — eBPF, real-time, GPU drivers, RDMA, custom networking, FUSE filesystems</li>
+          <li><span class="a">Stateful workloads with no managed equivalent</span> — legacy ERPs, MPI / HPC clusters, niche databases (CockroachDB self-hosted, Vitess on bare metal)</li>
+          <li><span class="a">Compliance demanding "we patch the OS"</span> — some frameworks still want you operating below the hypervisor</li>
+          <li><span class="a">Cost ceilings on steady-state large workloads</span> — 3-year RIs / CUDs make IaaS substantially cheaper than PaaS at scale</li>
+          <li><span class="a">BYO-licensing</span> — Oracle, Windows Server core licensing, SAP HANA</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card amber">
+        <h3 class="a">Climb to CaaS / PaaS / FaaS when…</h3>
+        <ul>
+          <li>Your workload is stateless HTTP / gRPC</li>
+          <li>You don't need OS-level control (the truth: 90% don't)</li>
+          <li>You'd rather pay $0.000004/req than $0.05/hr for an idle VM</li>
+          <li>You don't have a platform team and won't have one soon</li>
+        </ul>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">Climb to SaaS for</h3>
+        <ul>
+          <li>Anything generic — email, helpdesk, CRM, BI dashboards, observability, identity</li>
+          <li>Anything where the differentiation isn't yours — auth, signup flows, e-commerce checkout</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Decision rule</h3>
+        <p>Default to PaaS / CaaS. Drop to IaaS only when you've identified <em>exactly</em> which provider abstraction is the problem, and the operational tax on the higher layer is documented and bigger than the IaaS one.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 16 — ANTI-PATTERNS -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">15</span><h2>IaaS Anti-Patterns</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card red">
+        <h3 class="r">"Pets, not cattle"</h3>
+        <p>Each VM has a name (irene-prod-3), an SSH-tweaked config, and is irreplaceable because no one wrote down what's on it. Use AMIs / images / Packer; treat instances as disposable.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">"One VPC per developer"</h3>
+        <p>Hundred-VPC sprawl, 50 forgotten NAT gateways, no shared services. Use one shared dev VPC, prod-isolation only for prod.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">"Public IPs everywhere"</h3>
+        <p>SSH on 0.0.0.0/0, RDS in a public subnet "for now", DBs reachable from the internet. Use IAP / Session Manager / bastion + private subnets only.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">"Static IAM access keys"</h3>
+        <p>Long-lived <code>AKIA…</code> keys checked into a developer's <code>.aws/credentials</code>, then leaked to GitHub. Use SSO + STS.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card red">
+        <h3 class="r">"Mutually-exclusive subnets"</h3>
+        <p>Twelve subnets per AZ, each a tier, each only used by one app. Subnets are cheap; reuse them within tiers, scope with security groups.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">"All-AZ disaster planning"</h3>
+        <p>A single-AZ MVP that you forgot to widen. The first real outage is the AZ outage.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">"Snowflake security groups"</h3>
+        <p>Hand-edited, undocumented SGs that nobody dares change. Drift them once, you'll never untangle them. SGs in IaC, with names.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">"Backups but no restore drill"</h3>
+        <p>Backups run nightly; nobody has restored. Run a disaster-recovery drill at least quarterly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- 17 — SUMMARY -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">16</span><h2>Summary</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Three takeaways</h3>
+        <ol style="padding-left:1.2em;">
+          <li>IaaS is the floor — VMs, VPC, storage, IAM. Everything above it is built from this.</li>
+          <li>The operational tax of IaaS is real. Move up the stack unless you have a specific reason not to.</li>
+          <li>IaC, identity, and observability are not optional. The cloud is API-only — if you can't trace, audit, and reproduce, you're gambling.</li>
+        </ol>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Next in the series</h3>
+        <ul>
+          <li><span class="a">03</span> PaaS / FaaS / CaaS — the layer you'll actually use</li>
+          <li><span class="a">04</span> SaaS Architecture — multi-tenancy, B2B identity</li>
+          <li><span class="a">05</span> Cloud Security — IAM in depth, secrets, network, compliance</li>
+          <li><span class="a">06</span> LLM-as-a-Service</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Companion decks</h3>
+        <ul>
+          <li><a href="https://github.com/BrendanJamesLynskey/Deploying_with_Docker">Deploying with Docker</a> — what you put on these VMs</li>
+          <li><a href="https://github.com/BrendanJamesLynskey/Deploying_Node_Microservices">Deploying Node Microservices</a> — service architecture</li>
+          <li><a href="https://github.com/BrendanJamesLynskey/Introduction_to_CI_CD">CI/CD</a> — the pipeline that drives all of this</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">One sentence</h3>
+        <p>"<em>IaaS is the cloud's most powerful and most punishing layer — full control of the compute primitive, in exchange for taking on every problem above the hypervisor.</em>"</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/highlight.min.js"></script>
+<script>
+Reveal.initialize({
+  hash:true, slideNumber:'c/t', transition:'fade', transitionSpeed:'fast',
+  controls:true, progress:true, center:false, width:1100, height:900, margin:0.01,
+  plugins:[RevealHighlight], highlight:{theme:'monokai'}
+});
+</script>
+<script>
+(function(){
+  var h=Reveal.getConfig().height||900, m=Reveal.getConfig().margin||0.02;
+  var maxH=Math.floor(h*(1-2*m))+'px';
+  function fixSlides(){
+    document.querySelectorAll('.reveal .slides>section,.reveal .slides>section>section').forEach(function(s){
+      s.style.display='block'; s.style.maxHeight=maxH;
+    });
+  }
+  Reveal.on('ready',fixSlides); Reveal.on('slidechanged',fixSlides);
+})();
+</script>
+</body>
+</html>
