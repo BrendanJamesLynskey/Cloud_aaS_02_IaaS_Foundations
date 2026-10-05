@@ -44,7 +44,7 @@ Deck **02 of 6** in the [Cloud `*aaS` series](https://github.com/BrendanJamesLyn
 
 ## Technology
 
-[Reveal.js 4.6](https://revealjs.com) · [highlight.js](https://highlightjs.org) · Playfair Display + DM Sans + JetBrains Mono · inline SVG diagrams. Single self-contained `index.html`.
+[Reveal.js 4.6](https://revealjs.com) · [highlight.js](https://highlightjs.org) · Big Shoulders Display + Public Sans + Overpass Mono · inline SVG diagrams. Single self-contained `index.html`.
 
 ## See also
 
